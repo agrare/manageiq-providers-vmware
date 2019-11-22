@@ -178,10 +178,10 @@ module ManageIQ::Providers::Vmware::InfraManager::Inventory::Collector::Property
     ]
   }.freeze
 
-  def create_property_filter(vim)
+  def inventory_filter_spec(vim)
     root_folder = vim.serviceContent.rootFolder
 
-    spec = RbVmomi::VIM.PropertyFilterSpec(
+    RbVmomi::VIM.PropertyFilterSpec(
       :objectSet => [
         extension_manager_traversal_spec(vim.serviceContent.extensionManager),
         folder_traversal_spec(root_folder),
@@ -189,7 +189,26 @@ module ManageIQ::Providers::Vmware::InfraManager::Inventory::Collector::Property
       ],
       :propSet   => prop_set
     )
+  end
 
+  def events_filter_spec(vim)
+    filter_spec = RbVmomi::VIM.EventFilterSpec()
+    event_collector = vim.serviceContent.eventManager.CreateCollectorForEvents(:filter => filter_spec)
+    event_collector.SetCollectorPageSize(:maxCount => 100)
+
+    RbVmomi::VIM.PropertyFilterSpec(
+      :objectSet => [RbVmomi::VIM.ObjectSpec(:obj => event_collector)],
+      :propSet   => [
+        RbVmomi::VIM.PropertySpec(
+          :type    => event_collector.class.wsdl_name,
+          :all     => false,
+          :pathSet => %w[latestPage]
+        )
+      ]
+    )
+  end
+
+  def create_property_filter(vim, spec)
     vim.propertyCollector.CreateFilter(:spec => spec, :partialUpdates => true)
   end
 
