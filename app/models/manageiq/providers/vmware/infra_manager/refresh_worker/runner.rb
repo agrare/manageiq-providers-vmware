@@ -4,8 +4,8 @@ class ManageIQ::Providers::Vmware::InfraManager::RefreshWorker::Runner < ManageI
   self.delay_startup_for_vim_broker = !Settings.ems_refresh.vmwarews.streaming_refresh
 
   def after_initialize
-    super
-    self.ems = @emss.first
+    self.ems = @emss = ExtManagementSystem.find(@cfg[:ems_id])
+    do_exit("Unable to find instance for EMS id [#{@cfg[:ems_id]}].", 1) if @ems.nil?
   end
 
   def before_exit(_message, _exit_code)
@@ -14,7 +14,11 @@ class ManageIQ::Providers::Vmware::InfraManager::RefreshWorker::Runner < ManageI
 
   def do_before_work_loop
     # No need to queue an initial full refresh if we are streaming
-    super unless ems.supports_streaming_refresh?
+    return if ems.supports_streaming_refresh?
+
+    log_prefix = "EMS [#{ems.hostname}] as [#{ems.authentication_userid}]"
+    _log.info("#{log_prefix} Queueing initial refresh for EMS #{ems.id}.")
+    EmsRefresh.queue_refresh(ems)
   end
 
   def do_work
