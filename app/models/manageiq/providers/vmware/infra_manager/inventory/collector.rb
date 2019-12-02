@@ -47,17 +47,18 @@ class ManageIQ::Providers::Vmware::InfraManager::Inventory::Collector
 
     vim = connect
 
-    inventory_filter = create_property_filter(vim, inventory_filter_spec(vim))
-    event_filter     = create_property_filter(vim, events_filter_spec(vim))
+    property_filter_by_role = {}
+    role_by_property_filter = {}
 
-    queue_name_by_property_filter = {}
-    queue_name_by_property_filter[inventory_filter] = "inventory"
-    queue_name_by_property_filter[event_filter]     = "event"
+    active_roles.each do |role|
+      property_filter_by_role[role] = create_property_filter_for_role(vim, role)
+      role_by_property_filter[property_filter_by_role[role]] = role
+    end
 
     until exit_requested do
       version = monitor_updates(vim, version) do |updated_objects|
         updated_objects.each do |filter, object_set|
-          _log.info("#{log_header} Got #{object_set.count} #{queue_name_by_property_filter[filter]} updates")
+          _log.info("#{log_header} Got #{object_set.count} #{role_by_property_filter[filter]} updates")
         end
       end
     end
@@ -65,8 +66,7 @@ class ManageIQ::Providers::Vmware::InfraManager::Inventory::Collector
     _log.error("#{log_header}: #{err}")
     _log.log_backtrace(err)
   ensure
-    destroy_property_filter(inventory_filter)
-    destroy_property_filter(event_filter)
+    property_filter_by_role.values.each { |filter| destroy_property_filter(filter) }
     disconnect(vim)
   end
 
@@ -138,5 +138,9 @@ class ManageIQ::Providers::Vmware::InfraManager::Inventory::Collector
 
   def log_header
     ""
+  end
+
+  def active_roles
+    MiqServer.my_server.active_role_names & ManageIQ::Providers::Vmware::InfraManager::RefreshWorker.required_roles
   end
 end

@@ -178,7 +178,7 @@ module ManageIQ::Providers::Vmware::InfraManager::Inventory::Collector::Property
     ]
   }.freeze
 
-  def inventory_filter_spec(vim)
+  def ems_inventory_filter_spec(vim)
     root_folder = vim.serviceContent.rootFolder
 
     RbVmomi::VIM.PropertyFilterSpec(
@@ -191,7 +191,7 @@ module ManageIQ::Providers::Vmware::InfraManager::Inventory::Collector::Property
     )
   end
 
-  def events_filter_spec(vim)
+  def event_filter_spec(vim)
     filter_spec = RbVmomi::VIM.EventFilterSpec()
     event_collector = vim.serviceContent.eventManager.CreateCollectorForEvents(:filter => filter_spec)
     event_collector.SetCollectorPageSize(:maxCount => 100)
@@ -208,8 +208,18 @@ module ManageIQ::Providers::Vmware::InfraManager::Inventory::Collector::Property
     )
   end
 
+  def filter_spec_for(vim, role)
+    send("#{role}_filter_spec", vim)
+  rescue NoMethodError
+    raise ArgumentError, "Invalid collection role #{role}"
+  end
+
   def create_property_filter(vim, spec)
     vim.propertyCollector.CreateFilter(:spec => spec, :partialUpdates => true)
+  end
+
+  def create_property_filter_for_role(vim, role)
+    create_property_filter(vim, filter_spec_for(vim, role))
   end
 
   def destroy_property_filter(property_filter)
