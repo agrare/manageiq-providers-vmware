@@ -4,9 +4,22 @@ describe ManageIQ::Providers::Vmware::InfraManager::EventParser do
   EPV_DATA_DIR = File.expand_path(File.join(File.dirname(__FILE__), "event_data"))
 
   context ".event_to_hash" do
+    let(:ems) { FactoryBot.create(:ems_vmware) }
+
+    it "with a missing eventType" do
+      event = VimHash.new("Event")
+      expect { described_class.event_to_hash(event, ems.id) }.to raise_error(MiqException::Error, "event must have an eventType")
+    end
+
+    it "with a missing chainId" do
+      event = VimHash.new("Event")
+      event.eventType = "VmEvent"
+      expect { described_class.event_to_hash(event, ems.id) }.to raise_error(MiqException::Error, "event must have a chain_id")
+    end
+
     it "with a GeneralUserEvent" do
       event = YAML.load_file(File.join(EPV_DATA_DIR, 'general_user_event.yml'))
-      data = described_class.event_to_hash(event, 12345)
+      data = described_class.event_to_hash(event, ems.id)
 
       expect(data).to include(
         :event_type   => "GeneralUserEvent",
@@ -15,7 +28,7 @@ describe ManageIQ::Providers::Vmware::InfraManager::EventParser do
         :source       => "VC",
         :message      => "User logged event: EVM SmartState Analysis completed for VM [tch-UBUNTU-904-LTS-DESKTOP]",
         :timestamp    => "2010-08-24T01:08:10.396636Z",
-        :ems_id       => 12345,
+        :ems_id       => ems.id,
         :username     => "MANAGEIQ\\thennessy",
 
         :vm_ems_ref   => "vm-106741",
@@ -34,7 +47,7 @@ describe ManageIQ::Providers::Vmware::InfraManager::EventParser do
     context "with an EventEx event" do
       it "with an eventTypeId" do
         event = YAML.load_file(File.join(EPV_DATA_DIR, 'event_ex.yml'))
-        data = described_class.event_to_hash(event, 12345)
+        data = described_class.event_to_hash(event, ems.id)
 
         assert_result_fields(data, event)
         expect(data).to include(
@@ -45,7 +58,7 @@ describe ManageIQ::Providers::Vmware::InfraManager::EventParser do
 
       it "without an eventTypeId" do
         event = YAML.load_file(File.join(EPV_DATA_DIR, 'event_ex_without_eventtypeid.yml'))
-        data = described_class.event_to_hash(event, 12345)
+        data = described_class.event_to_hash(event, ems.id)
 
         assert_result_fields(data, event)
         expect(data).to include(
@@ -60,7 +73,7 @@ describe ManageIQ::Providers::Vmware::InfraManager::EventParser do
           :is_task      => false,
           :source       => "VC",
           :timestamp    => "2010-11-12T17:15:42.661128Z",
-          :ems_id       => 12345,
+          :ems_id       => ems.id,
           :host_ems_ref => "host-29",
           :host_name    => "vi4esx1.galaxy.local",
         )
