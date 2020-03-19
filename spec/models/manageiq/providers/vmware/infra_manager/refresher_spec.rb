@@ -572,7 +572,8 @@ describe ManageIQ::Providers::Vmware::InfraManager::Refresher do
     opaque_network = opaque_switch.lans.find_by(:uid_ems => "2aa2e41b-8b23-4043-ae1d-1e191cab15f4")
     expect(opaque_network).to have_attributes(
       :name    => "NSX_Network2",
-      :uid_ems => "2aa2e41b-8b23-4043-ae1d-1e191cab15f4"
+      :uid_ems => "2aa2e41b-8b23-4043-ae1d-1e191cab15f4",
+      :ems_ref => "NSX_Network2"
     )
 
     expect(@host.hardware).to have_attributes(

@@ -568,15 +568,21 @@ module ManageIQ::Providers
           switch = switch_uids[opaque_switch_keys.first]
           next if switch.nil?
 
-          uid = data["opaqueNetworkId"]
+          extra_config     = Hash[data["extraConfig"].to_miq_a.map { |ec| [ec["key"], ec["val"]] }]
+          nsx_network_uuid = extra_config["com.vmware.opaquenetwork.segment.path"]&.split("/")&.last
+
+          name    = data["opaqueNetworkName"]
+          uid_ems = data["opaqueNetworkId"]
+          ems_ref = nsx_network_uuid || name
 
           new_result = {
-            :uid_ems => uid,
-            :name    => data["opaqueNetworkName"]
+            :ems_ref => ems_ref,
+            :uid_ems => uid_ems,
+            :name    => name,
           }
 
           result << new_result
-          result_uids[uid] = new_result
+          result_uids[uid_ems] = new_result
           switch[:lans] << new_result
         end
 
@@ -1071,6 +1077,8 @@ module ManageIQ::Providers
           lan_uid = case backing.xsiType
                     when "VirtualEthernetCardDistributedVirtualPortBackingInfo"
                       backing.fetch_path('port', 'portgroupKey')
+                    when "VirtualEthernetCardOpaqueNetworkBackingInfo"
+                      backing.opaqueNetworkId
                     else
                       backing['deviceName']
                     end unless backing.nil?

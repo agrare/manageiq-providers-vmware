@@ -14,6 +14,7 @@ module ManageIQ::Providers::Vmware::InfraManager::SelectorSpec
       "config.network.dnsConfig.domainName",
       "config.network.dnsConfig.hostName",
       "config.network.ipRouteConfig.defaultGateway",
+      "config.network.opaqueNetwork[*].extraConfig",
       "config.network.opaqueNetwork[*].opaqueNetworkId",
       "config.network.opaqueNetwork[*].opaqueNetworkName",
       "config.network.opaqueNetwork[*].opaqueNetworkType",
