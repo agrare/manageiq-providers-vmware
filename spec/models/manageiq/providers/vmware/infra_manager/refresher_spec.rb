@@ -39,6 +39,27 @@ describe ManageIQ::Providers::Vmware::InfraManager::Refresher do
           assert_specific_vm
         end
       end
+
+      context "reconnects existing inventory" do
+        context "with one archived vm" do
+          let!(:archived_vm) { FactoryBot.create(:vm_vmware, :uid_ems => "420fe4bd-12b5-222d-554d-44ba94fb4401") }
+
+          it "reconnects archived vm" do
+            with_vcr { EmsRefresh.refresh(ems) }
+            expect(archived_vm.reload.ext_management_system).to eq(ems)
+          end
+        end
+
+        context "with an active vm" do
+          let(:other_ems) { FactoryBot.create(:ems_vmware) }
+          let!(:vm) { FactoryBot.create(:vm_vmware, :ext_management_system => other_ems, :uid_ems => "420fe4bd-12b5-222d-554d-44ba94fb4401") }
+
+          it "doesn't reconnect active vm" do
+            with_vcr { EmsRefresh.refresh(ems) }
+            expect(vm.reload.ext_management_system).to eq(other_ems)
+          end
+        end
+      end
     end
 
     context "targeted refresh" do
