@@ -28,4 +28,8 @@ VCR.configure do |config|
   secrets.vmware_tanzu.each do |key, val|
     config.define_cassette_placeholder(secrets.vmware_tanzu_defaults[key]) { val }
   end
+  config.ignore_request do |request|
+    uri = URI(request.uri)
+    uri.host == "vcsim" && uri.port == 8989
+  end
 end

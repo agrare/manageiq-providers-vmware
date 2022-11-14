@@ -25,6 +25,11 @@ jobs:
           --health-retries 5"
         ports:
         - 5432:5432
+      vcsim:
+        image: vmware/vcsim:latest
+        options: "-tls -l vcsim:8989"
+        ports:
+          - 8989:8989
     env:
       PGHOST: localhost
       PGPASSWORD: smartvm
