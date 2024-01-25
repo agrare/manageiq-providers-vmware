@@ -21,6 +21,7 @@
   :vmwarews:
     :refresh_interval: 24.hours
     :update_poll_interval: 1.second
+    :debug_updates: true
 :http_proxy:
   :vmware_cloud:
     :host:
