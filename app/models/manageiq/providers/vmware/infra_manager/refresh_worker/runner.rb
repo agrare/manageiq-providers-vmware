@@ -34,8 +34,12 @@ class ManageIQ::Providers::Vmware::InfraManager::RefreshWorker::Runner < ManageI
 
   attr_accessor :ems, :collector
 
+  def refresher_options
+    Settings.ems_refresh.vmwarews
+  end
+
   def start_inventory_collector
-    self.collector = ManageIQ::Providers::Vmware::InfraManager::Inventory::Collector.new(ems)
+    self.collector = ManageIQ::Providers::Vmware::InfraManager::Inventory::Collector.new(ems, refresher_options)
     collector.start
     _log.info("Started inventory collector")
   end

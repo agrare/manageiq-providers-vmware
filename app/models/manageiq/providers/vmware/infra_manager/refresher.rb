@@ -13,7 +13,7 @@ module ManageIQ::Providers
         raise NotImplementedError, "not implemented in production mode" if Rails.env.production?
 
         ems_by_ems_id.each do |_ems_id, ems|
-          collector = ems.class::Inventory::Collector.new(ems)
+          collector = ems.class::Inventory::Collector.new(ems, refresher_options)
           collector.refresh
         end
       end
