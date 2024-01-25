@@ -2,12 +2,15 @@ class ManageIQ::Providers::Vmware::InfraManager::Inventory::Collector
   include PropertyCollector
   include Vmdb::Logging
 
-  def initialize(ems)
+  def initialize(ems, refresher_options = {})
     @ems            = ems
     @exit_requested = false
     @cache          = cache_klass.new
     @saver          = saver_klass.new
     @vim_thread     = nil
+
+    @debug_updates         = refresher_options.debug_updates || false
+    @debug_updates_tempdir = Dir.mktmpdir("#{self.class.name}-#{ems.id}") if debug_updates
   end
 
   def refresh
@@ -41,7 +44,7 @@ class ManageIQ::Providers::Vmware::InfraManager::Inventory::Collector
 
   private
 
-  attr_reader   :ems, :saver
+  attr_reader   :ems, :saver, :debug_updates
   attr_accessor :exit_requested, :vim_thread, :last_full_refresh
 
   def vim_collector_thread
@@ -124,6 +127,8 @@ class ManageIQ::Providers::Vmware::InfraManager::Inventory::Collector
     loop do
       update_set = wait_for_updates(vim, version)
       break if update_set.nil?
+
+      dump_update_set(update_set) if debug_updates
 
       version = update_set.version
       updated_objects.concat(process_update_set(property_filter, update_set))
@@ -461,6 +466,11 @@ class ManageIQ::Providers::Vmware::InfraManager::Inventory::Collector
 
       s
     end
+  end
+
+  def dump_update_set(update_set)
+    version = update_set.version
+    File.write("#{@debug_updates_tempdir}/#{update_set.version}.yml", update_set.to_yaml)
   end
 
   def full_refresh_needed?
